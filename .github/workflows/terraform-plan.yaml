@@ -1,0 +1,39 @@
+name: Terraform Plan
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read #Permissão que esse action tem
+
+jobs:
+  terraform-plan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Verify if the user is part of the team
+        uses: TheModdingInquisition/actions-team-membership@v1.0
+        with:
+          organization: ${{ github.repository_owner }}
+          team: "talks-admins" # Time que pode executar o workflow
+          token: ${{ secrets.GITHUB_TOKEN }}
+          exit: true #Se o user não estiver no time ele encerra
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform State File
+        run: echo ${{ secrets.DOD_TERRAFORM_STATE }} > terraform.tfstate
+
+      - name: Terraform Plan
+        env:
+          DOD_TOKEN_TERRAFORM: ${{ secrets.DOD_TOKEN_TERRAFORM }}
+        run: terraform plan -state=terraform.tfstate -var="dod_token_terraform=${{ secrets.DOD_TOKEN_TERRAFORM }}"
